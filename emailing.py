@@ -22,7 +22,7 @@ def send_email(image_path):
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.ehlo()
         server.starttls()
-        server.login(getenv('GMAIL_SENDER'), getenv('GMAIL_PASSWORD'))
+        server.login(getenv('GMAIL_SENDE'), getenv('GMAIL_PASSWORD'))
         server.sendmail(getenv('GMAIL_SENDER'), getenv('EMAIL_RECIEVER'), email_message.as_string())
 
     # THE WAY WE WOULD DO IT WITOUT WITH CONTEXT MANAGER

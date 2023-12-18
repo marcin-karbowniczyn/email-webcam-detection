@@ -1,6 +1,9 @@
+import smtplib
+
 import cv2
 import time
 import glob
+import os
 from emailing import send_email
 
 video = cv2.VideoCapture(0)
@@ -11,6 +14,13 @@ time.sleep(1)
 first_frame = None
 status_list = []
 count = 1
+
+
+def clean_images_folder():
+    images = glob.glob('images/*.png')
+    for image in images:
+        os.remove(image)
+
 
 while True:
     status = 0
@@ -46,9 +56,8 @@ while True:
         if rectangle.any():
             status = 1
             # If there is a rectangle around the object, save this frame
-            if count < 30:
-                cv2.imwrite(f"images/{count}.png", frame)
-                count += 1
+            cv2.imwrite(f"images/{count}.png", frame)
+            count += 1
 
     status_list.append(status)
     status_list = status_list[-2:]
@@ -56,7 +65,15 @@ while True:
         # Choose which frame will be sent via email
         all_images = glob.glob('images/*.png')
         image_to_send = all_images[int(len(all_images) / 2)]
-        send_email(image_to_send)
+
+        try:
+            send_email(image_to_send)
+        except (smtplib.SMTPRecipientsRefused, smtplib.SMTPResponseException) as e:
+            print('Auth error, check sender, password and reciever. Email was not sent')
+        except AttributeError:
+            print("NoneType' object has no attribute 'encode' -> check env variables if they are correct. Email has not been sent.")
+
+        clean_images_folder()
 
     # 7. Display the video with rectangles
     cv2.imshow('My Video', frame)
