@@ -1,10 +1,10 @@
 import smtplib
-
 import cv2
 import time
 import glob
 import os
-from emailing import send_email
+from emailing import send_email_remove_images
+from threading import Thread
 
 video = cv2.VideoCapture(0)
 
@@ -14,13 +14,6 @@ time.sleep(1)
 first_frame = None
 status_list = []
 count = 1
-
-
-def clean_images_folder():
-    images = glob.glob('images/*.png')
-    for image in images:
-        os.remove(image)
-
 
 while True:
     status = 0
@@ -67,13 +60,14 @@ while True:
         image_to_send = all_images[int(len(all_images) / 2)]
 
         try:
-            send_email(image_to_send)
+            email_thread = Thread(target=send_email_remove_images, args=(image_to_send, all_images))
+            email_thread.daemon = True  # Deamon Threads zostaną zastopowane kiedy program się zamknie. Normalne thready na to nie pozwolą, program poczeka na ich wykonanie przed zamknięciem.
+            email_thread.start()
+
         except (smtplib.SMTPRecipientsRefused, smtplib.SMTPResponseException) as e:
             print('Auth error, check sender, password and reciever. Email was not sent')
         except AttributeError:
             print("NoneType' object has no attribute 'encode' -> check env variables if they are correct. Email has not been sent.")
-
-        clean_images_folder()
 
     # 7. Display the video with rectangles
     cv2.imshow('My Video', frame)

@@ -1,13 +1,16 @@
 import smtplib
 import imghdr  # This library gives us metadata about images
-from os import getenv
+import os
 from dotenv import load_dotenv
 from email.message import EmailMessage
 
 load_dotenv()
 
+images = os.listdir('images')
+print(images)
 
-def send_email(image_path):
+
+def send_email_remove_images(image_path, images):
     email_message = EmailMessage()
     email_message['Subject'] = 'New camera detection'
     # Email body
@@ -22,8 +25,13 @@ def send_email(image_path):
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.ehlo()
         server.starttls()
-        server.login(getenv('GMAIL_SENDE'), getenv('GMAIL_PASSWORD'))
-        server.sendmail(getenv('GMAIL_SENDER'), getenv('EMAIL_RECIEVER'), email_message.as_string())
+        server.login(os.getenv('GMAIL_SENDER'), os.getenv('GMAIL_PASSWORD'))
+        server.sendmail(os.getenv('GMAIL_SENDER'), os.getenv('EMAIL_RECIEVER'), email_message.as_string())
+
+    for image in images:
+        os.remove(image)
+
+    print('Email has been sent')
 
     # THE WAY WE WOULD DO IT WITOUT WITH CONTEXT MANAGER
     # gmail = smtplib.SMTP('smtp.gmail.com', 587)
@@ -35,4 +43,4 @@ def send_email(image_path):
 
 
 if __name__ == '__main__':
-    send_email(image_path='images/19.png')
+    send_email_remove_images(image_path='images/19.png', images=images)
