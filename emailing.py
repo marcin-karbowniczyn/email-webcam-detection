@@ -6,11 +6,8 @@ from email.message import EmailMessage
 
 load_dotenv()
 
-images = os.listdir('images')
-print(images)
 
-
-def send_email_remove_images(image_path, images):
+def send_email(image_path):
     email_message = EmailMessage()
     email_message['Subject'] = 'New camera detection'
     # Email body
@@ -28,9 +25,6 @@ def send_email_remove_images(image_path, images):
         server.login(os.getenv('GMAIL_SENDER'), os.getenv('GMAIL_PASSWORD'))
         server.sendmail(os.getenv('GMAIL_SENDER'), os.getenv('EMAIL_RECIEVER'), email_message.as_string())
 
-    for image in images:
-        os.remove(image)
-
     print('Email has been sent')
 
     # THE WAY WE WOULD DO IT WITOUT WITH CONTEXT MANAGER
@@ -43,4 +37,4 @@ def send_email_remove_images(image_path, images):
 
 
 if __name__ == '__main__':
-    send_email_remove_images(image_path='images/19.png', images=images)
+    send_email(image_path='images/19.png')

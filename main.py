@@ -3,13 +3,28 @@ import cv2
 import time
 import glob
 import os
-from emailing import send_email_remove_images
+from emailing import send_email
 from threading import Thread
 
 video = cv2.VideoCapture(0)
 
 # Stops the execution of the code for 1 second for the camera to start
 time.sleep(1)
+
+
+# This function will be responsible for sending and email and deleting the images. We need to merge these two functionalities, to prevent the video from being paused for a few seconds,
+# when the image is being sent via email. We also delete images in the same function, to prevent from deleting the image too quickly, before it has been sent via email.
+def manage_emails_and_images(image, images):
+    # Deamon Threads zostaną zastopowane kiedy program się zamknie. Normalne thready na to nie pozwolą, program poczeka na ich wykonanie przed zamknięciem.
+    try:
+        send_email(image)
+        for image in images:
+            os.remove(image)
+    except (smtplib.SMTPRecipientsRefused, smtplib.SMTPResponseException):
+        print('Credentials error, check sender, password and reciever. Email was not sent')
+    except AttributeError:
+        print("NoneType' object has no attribute 'encode' -> check env variables if they are correct. Email has not been sent.")
+
 
 first_frame = None
 status_list = []
@@ -51,25 +66,17 @@ while True:
             # If there is a rectangle around the object, save this frame
             cv2.imwrite(f"images/{count}.png", frame)
             count += 1
-
     status_list.append(status)
+
+    # 7. If the object has left the camera, send an email to the user and remove all the images
     status_list = status_list[-2:]
     if status_list[0] and not status_list[1]:  # if status_list[0] == 1 and status_list[1] == 0
         # Choose which frame will be sent via email
         all_images = glob.glob('images/*.png')
         image_to_send = all_images[int(len(all_images) / 2)]
+        Thread(target=manage_emails_and_images, args=(image_to_send, all_images), daemon=True, name='Email Sending Thread').start()
 
-        try:
-            email_thread = Thread(target=send_email_remove_images, args=(image_to_send, all_images))
-            email_thread.daemon = True  # Deamon Threads zostaną zastopowane kiedy program się zamknie. Normalne thready na to nie pozwolą, program poczeka na ich wykonanie przed zamknięciem.
-            email_thread.start()
-
-        except (smtplib.SMTPRecipientsRefused, smtplib.SMTPResponseException) as e:
-            print('Auth error, check sender, password and reciever. Email was not sent')
-        except AttributeError:
-            print("NoneType' object has no attribute 'encode' -> check env variables if they are correct. Email has not been sent.")
-
-    # 7. Display the video with rectangles
+    # 8. Display the video with rectangles
     cv2.imshow('My Video', frame)
 
     key = cv2.waitKey(1)
